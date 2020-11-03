@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Attendance</title>
+  <meta name="description" content="Attendance">
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
+  <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
+</head>
+
+<body>
+
+  <button id="my_button">Row count</button>
+  <table id="my_table" class="display">
+    <thead>
+        <tr>
+            <th>Column 1</th>
+            <th>Column 2</th>
+            <th>Column 3</th>
+            <th>Column 4</th>
+            <th>Column 5</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Row 1 Data 1</td>
+            <td>Row 1 Data 2</td>
+            <td>Row 1 Data 3</td>
+            <td>Row 1 Data 4</td>
+            <td>Row 1 Data 5</td>
+        </tr>
+        <tr>
+            <td>Row 2 Data 1</td>
+            <td>Row 2 Data 2</td>
+            <td>Row 2 Data 3</td>
+            <td>Row 2 Data 4</td>
+            <td>Row 2 Data 5</td>
+        </tr>
+    </tbody>
+  </table>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
+  <!-- <script src="js/scripts.js"></script> -->
+  <script>
+    $(document).ready( function () {
+      var table = $('#my_table').DataTable();
+
+      $('#my_table tbody').on('click', 'tr', function () {
+        $(this).toggleClass('selected');
+      });
+
+      $('#my_button').click( function () {
+        console.log(table.rows('.selected').data().length + ' row(s) selected');
+      });
+    });
+  </script>
+</body>
+</html>
