@@ -6,56 +6,113 @@
 
   <title>Attendance</title>
   <meta name="description" content="Attendance">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
+  <style>
+    #events {
+      margin-bottom: 1em;
+      padding: 1em;
+      background-color: #f6f6f6;
+      border: 1px solid #999;
+      border-radius: 3px;
+      height: 100px;
+      overflow: auto;
+    }
+    /* .bg-green {
+      background-color: green;
+    } */
+    .selected {
+      filter: brightness(85%);
+    }
+  </style>
 </head>
 
 <body>
 
-  <button id="my_button">Row count</button>
+  <label for="category">Choose a category:</label>
+
+  <select name="category" id="category-selector">
+  </select>
+
   <table id="my_table" class="display">
     <thead>
         <tr>
-            <th>Column 1</th>
-            <th>Column 2</th>
-            <th>Column 3</th>
-            <th>Column 4</th>
-            <th>Column 5</th>
+            <th>Name</th>
+            <th>Date 1</th>
+            <th>Date 2</th>
+            <th>Date 3</th>
+            <th>Date 4</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td>Row 1 Data 1</td>
-            <td>Row 1 Data 2</td>
-            <td>Row 1 Data 3</td>
-            <td>Row 1 Data 4</td>
-            <td>Row 1 Data 5</td>
+            <td>Name example 1</td>
+            <td>1 2</td>
+            <td>1 3</td>
+            <td>1 4</td>
+            <td>1 5</td>
         </tr>
         <tr>
-            <td>Row 2 Data 1</td>
-            <td>Row 2 Data 2</td>
-            <td>Row 2 Data 3</td>
-            <td>Row 2 Data 4</td>
-            <td>Row 2 Data 5</td>
+            <td>Name example 2</td>
+            <td>2 2</td>
+            <td>2 3</td>
+            <td>2 4</td>
+            <td>2 5</td>
         </tr>
     </tbody>
   </table>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.3.1/js/dataTables.select.min.js"></script>
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.6.4/js/dataTables.buttons.min.js"></script>
   <!-- <script src="js/scripts.js"></script> -->
   <script>
     $(document).ready( function () {
-      var table = $('#my_table').DataTable();
+      // fetch categories
+      var categories = {
+        'cat_default': '',
+        'cat_red': 'red',
+        'cat_green': 'green'
+      }
 
-      $('#my_table tbody').on('click', 'tr', function () {
-        $(this).toggleClass('selected');
+      // populate select dropdown
+      for (key in categories) {
+        $('#category-selector').append(
+          $('<option>').attr('value', key).html(categories[key])
+        );
+      }
+
+      var table = $('#my_table').DataTable( {
+        dom: 'Bfrtip',
+        select: {
+          style: 'os',
+          items: 'cell'
+        },
+        buttons: [
+          {
+            text: 'Apply',
+            action: function () {
+              var selectedCells = table.cells( { selected: true } );
+              var categorySelection = $('#category-selector').val();
+              selectedCells.every( function () {
+                var node = $(this.node());
+                if (! node.hasClass("sorting_1")) {
+                  var color = categories[categorySelection];
+                  if (color) {
+                    node.css('background-color', color);
+                  } else {
+                    node.css('background-color', '');
+                  }
+                }
+              });
+            }
+          }
+        ]
       });
 
-      $('#my_button').click( function () {
-        console.log(table.rows('.selected').data().length + ' row(s) selected');
-      });
     });
   </script>
 </body>
