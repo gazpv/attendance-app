@@ -8,13 +8,15 @@
   <title>Attendance</title>
   <meta name="description" content="Attendance">
 
-  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
   <style>
     .col {
       display: inline-block;
     }
-    body { font-size: 1.4em; }
+    body {
+      font-size: 1.4em;
+    }
     .date.ui-selecting {
       background: #FECA40;
     }
@@ -39,6 +41,9 @@
         <li class="col">name1</li>
         <li class="col date absent">date11</li>
         <li class="col date">date12</li>
+        <li class="col date">date13</li>
+        <li class="col date">date14</li>
+        <li class="col date">date15</li>
       </ol>
     </li>
     <li class="row">
@@ -47,6 +52,9 @@
         <li class="col">name2</li>
         <li class="col date">date21</li>
         <li class="col date absent">date22</li>
+        <li class="col date absent">date23</li>
+        <li class="col date absent">date24</li>
+        <li class="col date absent">date25</li>
       </ol>
     </li>
   </ol>
@@ -62,23 +70,22 @@
     $(document).ready(function(){
       $("#selectable").selectable({
         stop: function() {
-          selection = '';
+          selection = {};
           $( ".ui-selected", this ).each(function() {
             if (this.classList.contains("row")) {
               var children = this.children[0].children;
               var id = children[0].innerText;
               var name = children[1].innerText;
-              var dates = "";
+              selection[id] = { "name": name, "ranges": [] }
               for (var i = 2; i < children.length; i++) {
                 var child = children[i];
                 if (child.classList.contains("ui-selected")) {
-                  dates += " " + child.innerText;
+                  selection[id]["ranges"].push(child.innerText);
                 }
               }
-              selection = name + ": " + dates + ", ";
-              console.log(selection);
             }
           });
+          console.log(selection);
         }
 			});
     });
@@ -89,9 +96,7 @@
         type: "POST",
         url: "http://127.0.0.1:8000/",
         dataType: "json",
-        data: {
-            "test": selection
-        },
+        data: selection,
         success: function(result) {
             alert('ok');
         },
