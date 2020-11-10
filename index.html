@@ -8,103 +8,162 @@
   <title>Attendance</title>
   <meta name="description" content="Attendance">
 
-  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="./css/vis-timeline-graph2d.min.css">
 
-  <style>
-    .col {
-      display: inline-block;
-    }
+  <style type="text/css">
     body {
-      font-size: 1.4em;
+      color: #4D4D4D;
+      font: 10pt arial;
     }
-    .date.ui-selecting {
-      background: #FECA40;
-    }
-    .date.ui-selected {
-      background: #F39814;
-      color: white;
-    }
-
   </style>
 </head>
 
-<body>
+<body onresize="/*timeline.checkResize();*/">
 
-  <p id="feedback">
-    <span>You've selected:</span> <span id="select-result">none</span>
-  </p>
+  <div id="visualization"></div>
+  <input id="save" type="button" value="save">
+  <input id="load" type="button" value="load">
+  <textarea id="data"></textarea>
 
-  <ol id="selectable">
-    <li class="row">
-      <ol>
-        <li class="col">id1</li>
-        <li class="col">name1</li>
-        <li class="col date absent">date11</li>
-        <li class="col date">date12</li>
-        <li class="col date">date13</li>
-        <li class="col date">date14</li>
-        <li class="col date">date15</li>
-      </ol>
-    </li>
-    <li class="row">
-      <ol>
-        <li class="col">id2</li>
-        <li class="col">name2</li>
-        <li class="col date">date21</li>
-        <li class="col date absent">date22</li>
-        <li class="col date absent">date23</li>
-        <li class="col date absent">date24</li>
-        <li class="col date absent">date25</li>
-      </ol>
-    </li>
-  </ol>
-
-  <button id="send-button">send</button>
-
-  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-
+  <script src="./js/vis-timeline-graph2d.min.js"></script>
   <script>
-    var selection = '';
+  
+    var sampleGroups = [
+      {id: 1, content: 'name1'},
+      {id: 2, content: 'name2'},
+      {id: 3, content: 'name3'},
+      {id: 4, content: 'name4'}
+    ]
 
-    $(document).ready(function(){
-      $("#selectable").selectable({
-        stop: function() {
-          selection = {};
-          $( ".ui-selected", this ).each(function() {
-            if (this.classList.contains("row")) {
-              var children = this.children[0].children;
-              var id = children[0].innerText;
-              var name = children[1].innerText;
-              selection[id] = { "name": name, "ranges": [] }
-              for (var i = 2; i < children.length; i++) {
-                var child = children[i];
-                if (child.classList.contains("ui-selected")) {
-                  selection[id]["ranges"].push(child.innerText);
-                }
-              }
-            }
-          });
-          console.log(selection);
-        }
-			});
-    });
+    var sampleItems = [
+      {
+        "group": 1,
+        "start": "2020-11-08",
+        "end": "2020-11-13",
+        "id": "1"
+      },
+      {
+        "group": 1,
+        "start": "2020-12-03",
+        "end": "2020-12-12",
+        "id": "2"
+      },
+      {
+        "group": 3,
+        "start": "2020-11-04",
+        "end": "2020-11-12",
+        "id": "3"
+      },
+      {
+        "group": 3,
+        "start": "2020-11-23",
+        "end": "2020-11-30",
+        "id": "4"
+      },
+      {
+        "group": 4,
+        "start": "2020-11-18",
+        "end": "2020-11-24",
+        "id": "5"
+      }
+    ]
 
-    $("#send-button").click(function(e) {
-      e.preventDefault();
-      $.ajax({
-        type: "POST",
-        url: "http://127.0.0.1:8000/",
-        dataType: "json",
-        data: selection,
-        success: function(result) {
-            alert('ok');
-        },
-        error: function(result) {
-            alert('error');
+    var groups = new vis.DataSet(sampleGroups);
+    var items = new vis.DataSet(sampleItems);
+
+    function addDays(date, days) {
+      var result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    // specify options
+    var options = {
+      stack: true,
+      editable: {
+        updateGroup: false,
+        updateTime: true,
+        overrideItems: true,
+        remove: true,
+        add: true
+      },
+      margin: {
+        item: 10, // minimal margin between items
+        axis: 5   // minimal margin between items and the axis
+      },
+      orientation: 'top',
+
+      timeAxis: { scale: 'day', step: 1 },
+      min: new Date(2020, 10, 1),  // lower limit of visible range
+      max: new Date(2020, 11, 31),
+
+      zoomable: false,
+      zoomMin: 1000 * 60 * 60 * 24 * 31 * 2,  // two days (in milliseconds)
+      zoomMax: 1000 * 60 * 60 * 24 * 31 * 3,  // 3 months
+
+      snap: function (date, scale, step) {
+        var days = 1000 * 60 * 60 * 24;
+        return Math.round(date / days) * days - 1000 * 60 * 60 * 2;
+      },
+      // onUpdate: function (item, callback) {
+      //   var update = prompt('Edit items text:', item.content);
+      //   if (update === null) {
+      //     callback(null);
+      //   } else {
+      //     item.content = update;
+      //     callback(item);
+      //   }
+      // },
+      onAdd(item, callback) {
+        item.end = addDays(item.start, 1);
+        callback(item);
+      }
+    };
+
+    // create a Timeline
+    var container = document.getElementById('visualization');
+    timeline = new vis.Timeline(container, null, options);
+    timeline.setGroups(groups);
+    timeline.setItems(items);
+
+    var txtData = document.getElementById('data');
+    var btnSave = document.getElementById('save');
+    var btnLoad = document.getElementById('load');
+
+    btnLoad.onclick = function loadData () {
+      var data = JSON.parse(txtData.value);
+      items.clear();
+      items.add(data);
+    };
+
+    btnSave.onclick = function saveData() {
+      // get the data from the DataSet
+      //
+      // Note that we specify the output type of the fields start and end
+      // as "ISODate", which is safely serializable. Other serializable types
+      // are "Number" (unix timestamp), "ASPDate" or "String" (without timezone!).
+      //
+      // Alternatively, it is possible to configure the DataSet to convert
+      // the output automatically to ISODates like:
+      //
+      //   var options = {
+      //     type: {start: 'ISODate', end: 'ISODate'}
+      //   };
+      //   var items = new vis.DataSet(options);
+      //   // now items.get() will automatically convert start and end to ISO dates.
+      //
+      var data = items.get({
+        type: {
+          start: 'Number',
+          end: 'Number'
         }
       });
-    });
+
+      // serialize the data and put it in the textarea
+      txtData.value = JSON.stringify(data, null, 2);
+    }
+  
   </script>
+
 </body>
 </html>
