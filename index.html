@@ -79,7 +79,7 @@
 
     // specify options
     var options = {
-      stack: true,
+      stack: false,
       editable: {
         updateGroup: false,
         updateTime: true,
@@ -116,7 +116,21 @@
       // },
       onAdd(item, callback) {
         item.end = addDays(item.start, 1);
+        item.content = '';
         callback(item);
+      },
+      onMoving: function (item, callback) {
+        var overlapping = items.get({
+          filter: function(testItem) {
+            if (testItem.id == item.id || testItem.group != item.group) {
+              return false;
+            }
+            return ((item.start <= testItem.end) && (item.end >= testItem.start));
+          }
+        });
+        if (overlapping.length == 0) {
+          callback(item);
+        }
       }
     };
 
