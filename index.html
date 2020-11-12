@@ -23,50 +23,68 @@
   <div id="visualization"></div>
   <input id="save" type="button" value="save">
   <input id="load" type="button" value="load">
+  <input id="addMonimos" type="button" value="Προσθήκη Μόνιμου">
+  <input id="addMiMonimos" type="button" value="Προσθήκη μη Μόνιμου">
+  <input id="addEktosPN" type="button" value="Προσθήκη Εκτός ΠΝ">
   <textarea id="data"></textarea>
 
   <script src="./js/vis-timeline-graph2d.min.js"></script>
   <script>
   
     var sampleGroups = [
-      {id: 1, content: 'name1'},
-      {id: 2, content: 'name2'},
-      {id: 3, content: 'name3'},
-      {id: 4, content: 'name4'}
+      {id: 1, content: 'Μόνιμοι', nestedGroups: [4, 5]},
+      {id: 2, content: 'Μη Μόνιμοι', nestedGroups: [6, 7]},
+      {id: 3, content: 'Εκτός ΠΝ', nestedGroups: [8]},
+
+      {id: 4, content: 'name1', treeLevel: 1},
+      {id: 5, content: 'name2', treeLevel: 1},
+      {id: 6, content: 'name3', treeLevel: 1},
+      {id: 7, content: 'name4', treeLevel: 1},
+      {id: 8, content: 'name5', treeLevel: 1}
     ]
 
     var sampleItems = [
       {
-        "group": 1,
+        "group": 4,
         "start": "2020-11-08",
         "end": "2020-11-13",
-        "id": "1"
+        "id": "1",
+        "undefined": "1"
       },
       {
-        "group": 1,
-        "start": "2020-12-03",
-        "end": "2020-12-12",
-        "id": "2"
+        "group": 5,
+        "start": "2020-12-01",
+        "end": "2020-12-10",
+        "id": "2",
+        "undefined": "2"
       },
       {
-        "group": 3,
-        "start": "2020-11-04",
-        "end": "2020-11-12",
-        "id": "3"
+        "group": 6,
+        "start": "2020-11-02",
+        "end": "2020-11-10",
+        "id": "3",
+        "undefined": "3"
       },
       {
-        "group": 3,
-        "start": "2020-11-23",
-        "end": "2020-11-30",
-        "id": "4"
+        "group": 6,
+        "start": "2020-11-21",
+        "end": "2020-11-28",
+        "id": "4",
+        "undefined": "4"
       },
       {
-        "group": 4,
-        "start": "2020-11-18",
-        "end": "2020-11-24",
-        "id": "5"
+        "group": 8,
+        "start": "2020-11-16",
+        "end": "2020-11-22",
+        "id": "5",
+        "undefined": "5"
       }
     ]
+
+    sampleItems.forEach(item => {
+      item.start = new Date(Date.parse(item.start));
+      item.end = new Date(Date.parse(item.end));
+    });
 
     var groups = new vis.DataSet(sampleGroups);
     var items = new vis.DataSet(sampleItems);
@@ -79,6 +97,7 @@
 
     // specify options
     var options = {
+      locale: 'el',
       stack: false,
       editable: {
         updateGroup: false,
@@ -103,7 +122,7 @@
 
       snap: function (date, scale, step) {
         var days = 1000 * 60 * 60 * 24;
-        return Math.round(date / days) * days - 1000 * 60 * 60 * 2;
+        return Math.round(date / days) * days - 1000 * 60 * 60 * 2;  // minus 2h (TZ adjustment)
       },
       // onUpdate: function (item, callback) {
       //   var update = prompt('Edit items text:', item.content);
@@ -122,10 +141,12 @@
       onMoving: function (item, callback) {
         var overlapping = items.get({
           filter: function(testItem) {
-            if (testItem.id == item.id || testItem.group != item.group) {
-              return false;
-            }
-            return ((item.start <= testItem.end) && (item.end >= testItem.start));
+            return (
+              (testItem.group == item.group) &&
+              (testItem.id != item.id) &&
+              (item.end >= testItem.start) &&
+              (item.start <= testItem.end)
+            )
           }
         });
         if (overlapping.length == 0) {
@@ -141,16 +162,14 @@
     timeline.setItems(items);
 
     var txtData = document.getElementById('data');
-    var btnSave = document.getElementById('save');
-    var btnLoad = document.getElementById('load');
 
-    btnLoad.onclick = function loadData () {
+    document.getElementById('load').onclick = function loadData () {
       var data = JSON.parse(txtData.value);
       items.clear();
       items.add(data);
     };
 
-    btnSave.onclick = function saveData() {
+    document.getElementById('save').onclick = function saveData() {
       // get the data from the DataSet
       //
       // Note that we specify the output type of the fields start and end
@@ -176,7 +195,24 @@
       // serialize the data and put it in the textarea
       txtData.value = JSON.stringify(data, null, 2);
     }
-  
+
+    function addGroup(promptText, parentGroupContent) {
+      groups.add({
+        content: prompt(promptText),
+        treeLevel: 1
+      });
+      var newIdAutoAssigned = groups.get()[groups.length - 1].id;
+      groups.get({
+        filter: function(group) {
+          return group.content == parentGroupContent
+        }
+      })[0].nestedGroups.push(newIdAutoAssigned);
+    }
+
+    document.getElementById('addMonimos').onclick = () => addGroup('Όνομα Μόνιμου', 'Μόνιμοι')
+    document.getElementById('addMiMonimos').onclick = () => addGroup('Όνομα Μη Μόνιμου', 'Μη Μόνιμοι')
+    document.getElementById('addEktosPN').onclick = () => addGroup('Όνομα Εκτός ΠΝ', 'Εκτός ΠΝ')
+
   </script>
 
 </body>
