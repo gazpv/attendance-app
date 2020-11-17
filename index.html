@@ -34,13 +34,14 @@
     var sampleGroups = [
       {id: 1, content: 'Μόνιμοι', nestedGroups: [4, 5]},
       {id: 2, content: 'Μη Μόνιμοι', nestedGroups: [6, 7]},
-      {id: 3, content: 'Εκτός ΠΝ', nestedGroups: [8]},
+      {id: 3, content: 'Εκτός ΠΝ', nestedGroups: [8, 9]},
 
       {id: 4, content: 'name1', treeLevel: 1},
       {id: 5, content: 'name2', treeLevel: 1},
       {id: 6, content: 'name3', treeLevel: 1},
       {id: 7, content: 'name4', treeLevel: 1},
-      {id: 8, content: 'name5', treeLevel: 1}
+      {id: 8, content: 'name5', treeLevel: 1},
+      {id: 9, content: 'name6', treeLevel: 1}
     ]
 
     var sampleItems = [
@@ -77,22 +78,40 @@
         "start": "2020-11-16",
         "end": "2020-11-22",
         "id": "5",
-        "undefined": "5"
+      },     
+      {
+        "group": 9,
+        "start": "2020-11-16",
+        "end": "2020-11-22",
+        "id": "6",
       }
     ]
+
+    var ektosCategory = sampleGroups.filter(obj => {
+      return obj.content == "Εκτός ΠΝ"
+    })[0];
+    var ektosPN = sampleGroups.filter(obj => {
+      return ektosCategory.nestedGroups.includes(obj.id)
+    });
+    for (var i = 0; i < ektosPN.length; i++) {
+      ektosPN[i]["className"] = "ektos-pn";
+    }
+    var groups = new vis.DataSet(sampleGroups);
 
     sampleItems.forEach(item => {
       item.start = new Date(Date.parse(item.start));
       item.end = new Date(Date.parse(item.end));
     });
-
-    var groups = new vis.DataSet(sampleGroups);
     var items = new vis.DataSet(sampleItems);
 
     function addDays(date, days) {
       var result = new Date(date);
       result.setDate(result.getDate() + days);
       return result;
+    }
+
+    function isParentGroup(group) {
+      return group.hasOwnProperty("nestedGroups")
     }
 
     // specify options
@@ -134,6 +153,9 @@
       //   }
       // },
       onAdd(item, callback) {
+        if (isParentGroup(groups.get(item.group))) {
+          return;
+        }
         item.end = addDays(item.start, 1);
         item.content = '';
         callback(item);
@@ -153,13 +175,27 @@
           callback(item);
         }
       }
-    };
+    }
 
     // create a Timeline
     var container = document.getElementById('visualization');
     timeline = new vis.Timeline(container, null, options);
     timeline.setGroups(groups);
     timeline.setItems(items);
+    timeline.on('click', function (properties) {
+      //console.log(properties);
+      var selectedGroup = groups.get(properties.group);
+      if (isParentGroup(selectedGroup)) {
+          return;
+      }
+      if (properties.what === "group-label") {
+        groups.update({
+          id: properties.group,
+          content: prompt("Επεξεργασία") || selectedGroup.content,
+          treeLevel: 1
+        });
+      }
+    });
 
     var txtData = document.getElementById('data');
 
@@ -212,6 +248,13 @@
     document.getElementById('addMonimos').onclick = () => addGroup('Όνομα Μόνιμου', 'Μόνιμοι')
     document.getElementById('addMiMonimos').onclick = () => addGroup('Όνομα Μη Μόνιμου', 'Μη Μόνιμοι')
     document.getElementById('addEktosPN').onclick = () => addGroup('Όνομα Εκτός ΠΝ', 'Εκτός ΠΝ')
+
+    var ektos = document.querySelector(".vis-label.ektos-pn");
+
+    for (var childDiv of Array.from(ektos.children)) {
+      //childDiv.appendChild(document.createElement('input'));
+      console.log(childDiv);
+    }
 
   </script>
 
