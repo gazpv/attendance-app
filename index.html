@@ -9,6 +9,7 @@
   <meta name="description" content="Attendance">
 
   <link rel="stylesheet" href="./css/vis-timeline-graph2d.min.css">
+  <link rel="stylesheet" href="./css/jquery-ui.css">
 
   <style type="text/css">
     body {
@@ -28,9 +29,26 @@
   <input id="addEktosPN" type="button" value="Προσθήκη Εκτός ΠΝ">
   <textarea id="data"></textarea>
 
+  <div id="dialog-confirm" title="Επεξεργασία">
+    <p>Επεξεργασία επιλογής:</p>
+  </div>
+
+  <script src="./js/jquery.js"></script>
+  <script src="./js/jquery-ui.js"></script>
   <script src="./js/vis-timeline-graph2d.min.js"></script>
   <script>
-  
+    // Utilities
+    function addDays(date, days) {
+      var result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    function isParentGroup(group) {
+      return group.hasOwnProperty("nestedGroups")
+    }
+
+    // Sample Data
     var sampleGroups = [
       {id: 1, content: 'Μόνιμοι', nestedGroups: [4, 5]},
       {id: 2, content: 'Μη Μόνιμοι', nestedGroups: [6, 7]},
@@ -87,6 +105,7 @@
       }
     ]
 
+    // Add class to ektos-pn to be able to grab them later
     var ektosCategory = sampleGroups.filter(obj => {
       return obj.content == "Εκτός ΠΝ"
     })[0];
@@ -96,25 +115,18 @@
     for (var i = 0; i < ektosPN.length; i++) {
       ektosPN[i]["className"] = "ektos-pn";
     }
+    // Create groups
     var groups = new vis.DataSet(sampleGroups);
 
+    // parse dates
     sampleItems.forEach(item => {
       item.start = new Date(Date.parse(item.start));
       item.end = new Date(Date.parse(item.end));
     });
+    // Create items
     var items = new vis.DataSet(sampleItems);
 
-    function addDays(date, days) {
-      var result = new Date(date);
-      result.setDate(result.getDate() + days);
-      return result;
-    }
-
-    function isParentGroup(group) {
-      return group.hasOwnProperty("nestedGroups")
-    }
-
-    // specify options
+    // specify timeline options
     var options = {
       locale: 'el',
       stack: false,
@@ -143,15 +155,6 @@
         var days = 1000 * 60 * 60 * 24;
         return Math.round(date / days) * days - 1000 * 60 * 60 * 2;  // minus 2h (TZ adjustment)
       },
-      // onUpdate: function (item, callback) {
-      //   var update = prompt('Edit items text:', item.content);
-      //   if (update === null) {
-      //     callback(null);
-      //   } else {
-      //     item.content = update;
-      //     callback(item);
-      //   }
-      // },
       onAdd(item, callback) {
         if (isParentGroup(groups.get(item.group))) {
           return;
@@ -183,60 +186,82 @@
     timeline.setGroups(groups);
     timeline.setItems(items);
     timeline.on('click', function (properties) {
-      //console.log(properties);
       var selectedGroup = groups.get(properties.group);
       if (isParentGroup(selectedGroup)) {
           return;
       }
-      if (properties.what === "group-label") {
-        groups.update({
-          id: properties.group,
-          content: prompt("Επεξεργασία") || selectedGroup.content,
-          treeLevel: 1
+      if (properties.what === "group-label" ) {
+        console.log(properties);
+        var btns = {
+          "Αλλαγή Ονόματος": function() {
+            groups.update({
+              id: properties.group,
+              content: prompt("Επεξεργασία") || selectedGroup.content,
+              treeLevel: 1
+            });
+            $(this).dialog( "close" );
+          },
+          "Ακύρωση": function() {
+            $(this).dialog( "close" );
+          }
+        }
+        if (properties.event.originalTarget.parentElement.classList.contains('ektos-pn') ||
+          properties.event.originalTarget.classList.contains('ektos-pn')) {
+          btns["Διαγραφή"] = function() {
+            var itemsToRemove = items.get({
+              filter: (item) => {
+                return item.group == properties.group
+              }
+            });
+            items.remove(itemsToRemove);
+            ektosCategory.nestedGroups.splice(ektosCategory.nestedGroups.indexOf(properties.group, 1));
+            groups.remove({
+              id: properties.group,
+            });
+            $(this).dialog( "close" );
+          }
+        }
+        $("#dialog-confirm").dialog({
+          resizable: false,
+          height: "auto",
+          width: 400,
+          modal: true,
+          buttons: btns
         });
       }
     });
 
+    // Data serialization utilities
     var txtData = document.getElementById('data');
-
     document.getElementById('load').onclick = function loadData () {
       var data = JSON.parse(txtData.value);
       items.clear();
       items.add(data);
     };
-
     document.getElementById('save').onclick = function saveData() {
-      // get the data from the DataSet
-      //
-      // Note that we specify the output type of the fields start and end
-      // as "ISODate", which is safely serializable. Other serializable types
-      // are "Number" (unix timestamp), "ASPDate" or "String" (without timezone!).
-      //
-      // Alternatively, it is possible to configure the DataSet to convert
-      // the output automatically to ISODates like:
-      //
-      //   var options = {
-      //     type: {start: 'ISODate', end: 'ISODate'}
-      //   };
-      //   var items = new vis.DataSet(options);
-      //   // now items.get() will automatically convert start and end to ISO dates.
-      //
       var data = items.get({
         type: {
-          start: 'Number',
-          end: 'Number'
+          start: 'ISODate',
+          end: 'ISODate'
         }
       });
-
       // serialize the data and put it in the textarea
       txtData.value = JSON.stringify(data, null, 2);
     }
 
-    function addGroup(promptText, parentGroupContent) {
-      groups.add({
-        content: prompt(promptText),
-        treeLevel: 1
-      });
+    // Add group buttons
+    function addGroup(promptText, parentGroupContent, className) {
+      var content = prompt(promptText);
+      if (! content)
+        return;
+      var newGroup = {
+        content: content,
+        treeLevel: 1,
+      };
+      if (className) {
+        newGroup['className'] = className;
+      }
+      groups.add(newGroup);
       var newIdAutoAssigned = groups.get()[groups.length - 1].id;
       groups.get({
         filter: function(group) {
@@ -244,17 +269,9 @@
         }
       })[0].nestedGroups.push(newIdAutoAssigned);
     }
-
-    document.getElementById('addMonimos').onclick = () => addGroup('Όνομα Μόνιμου', 'Μόνιμοι')
-    document.getElementById('addMiMonimos').onclick = () => addGroup('Όνομα Μη Μόνιμου', 'Μη Μόνιμοι')
-    document.getElementById('addEktosPN').onclick = () => addGroup('Όνομα Εκτός ΠΝ', 'Εκτός ΠΝ')
-
-    var ektos = document.querySelector(".vis-label.ektos-pn");
-
-    for (var childDiv of Array.from(ektos.children)) {
-      //childDiv.appendChild(document.createElement('input'));
-      console.log(childDiv);
-    }
+    document.getElementById('addMonimos').onclick = () => addGroup('Όνομα Μόνιμου', 'Μόνιμοι', null);
+    document.getElementById('addMiMonimos').onclick = () => addGroup('Όνομα Μη Μόνιμου', 'Μη Μόνιμοι', null);
+    document.getElementById('addEktosPN').onclick = () => addGroup('Όνομα Εκτός ΠΝ', 'Εκτός ΠΝ', 'ektos-pn');
 
   </script>
 
