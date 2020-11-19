@@ -52,7 +52,7 @@
     var sampleGroups = [
       {id: 1, content: 'Μόνιμοι', nestedGroups: [4, 5]},
       {id: 2, content: 'Μη Μόνιμοι', nestedGroups: [6, 7]},
-      {id: 3, content: 'Εκτός ΠΝ', nestedGroups: [8, 9]},
+      {id: 3, content: 'Εκτός ΠΝ', nestedGroups: [9, 8]},
 
       {id: 4, content: 'name1', treeLevel: 1},
       {id: 5, content: 'name2', treeLevel: 1},
@@ -191,7 +191,7 @@
           return;
       }
       if (properties.what === "group-label" ) {
-        console.log(properties);
+        //console.log(properties);
         var btns = {
           "Αλλαγή Ονόματος": function() {
             groups.update({
@@ -214,7 +214,7 @@
               }
             });
             items.remove(itemsToRemove);
-            ektosCategory.nestedGroups.splice(ektosCategory.nestedGroups.indexOf(properties.group, 1));
+            ektosCategory.nestedGroups.splice(ektosCategory.nestedGroups.indexOf(properties.group), 1);
             groups.remove({
               id: properties.group,
             });
