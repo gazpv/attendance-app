@@ -48,8 +48,8 @@
     }
 
     function propertiesContainClass(properties, className) {
-      return properties.event.originalTarget.parentElement.classList.contains(className) ||
-        properties.event.originalTarget.classList.contains(className)
+      var target = $(properties.event.target)
+      return target.hasClass(className) || target.parent().hasClass(className)
     }
 
     // Sample Data
@@ -196,11 +196,7 @@
       }
       var selectedGroup = groups.get(properties.group);
       var selectedCategory = groups.get(selectedGroup.nestedInGroup);
-      var btns = {
-        "Ακύρωση": function() {
-          $(this).dialog("close");
-        }
-      }
+      var btns = {}
       btns["Αλλαγή Ονόματος"] = function() {
         groups.update({
           id: properties.group,
@@ -216,10 +212,13 @@
           }
         });
         items.remove(itemsToRemove);
-        selectedCategory.nestedGroups.splice(ektosCategory.nestedGroups.indexOf(properties.group), 1);
+        selectedCategory.nestedGroups.splice(selectedCategory.nestedGroups.indexOf(properties.group), 1);
         groups.remove({
           id: properties.group,
         });
+        $(this).dialog("close");
+      }
+      btns["Ακύρωση"] = function() {
         $(this).dialog("close");
       }
       $("#dialog-confirm").dialog({
