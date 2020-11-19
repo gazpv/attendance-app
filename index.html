@@ -24,7 +24,6 @@
   <div id="visualization"></div>
   <input id="save" type="button" value="save">
   <input id="load" type="button" value="load">
-  <input id="addMonimos" type="button" value="Προσθήκη Μόνιμου">
   <input id="addMiMonimos" type="button" value="Προσθήκη μη Μόνιμου">
   <input id="addEktosPN" type="button" value="Προσθήκη Εκτός ΠΝ">
   <textarea id="data"></textarea>
@@ -48,6 +47,11 @@
       return group.hasOwnProperty("nestedGroups")
     }
 
+    function propertiesContainClass(properties, className) {
+      return properties.event.originalTarget.parentElement.classList.contains(className) ||
+        properties.event.originalTarget.classList.contains(className)
+    }
+
     // Sample Data
     var sampleGroups = [
       {id: 1, content: 'Μόνιμοι', nestedGroups: [4, 5]},
@@ -56,7 +60,7 @@
 
       {id: 4, content: 'name1', treeLevel: 1},
       {id: 5, content: 'name2', treeLevel: 1},
-      {id: 6, content: 'name3', treeLevel: 1},
+      {id: 6, content: 'name3-editable', treeLevel: 1, className: 'mi-monimos-editable'},
       {id: 7, content: 'name4', treeLevel: 1},
       {id: 8, content: 'name5', treeLevel: 1},
       {id: 9, content: 'name6', treeLevel: 1}
@@ -66,7 +70,7 @@
       {
         "group": 4,
         "start": "2020-11-08",
-        "end": "2020-11-13",
+        "end": "2020-11-13 00:00:01",
         "id": "1",
         "undefined": "1"
       },
@@ -128,7 +132,7 @@
 
     // specify timeline options
     var options = {
-      locale: 'el',
+      locale: 'en',
       stack: false,
       editable: {
         updateGroup: false,
@@ -153,7 +157,7 @@
 
       snap: function (date, scale, step) {
         var days = 1000 * 60 * 60 * 24;
-        return Math.round(date / days) * days - 1000 * 60 * 60 * 2;  // minus 2h (TZ adjustment)
+        return Math.ceil(date / days) * days - 1000 * 60 * 60 * 2;  // minus 2h (TZ adjustment)
       },
       onAdd(item, callback) {
         if (isParentGroup(groups.get(item.group))) {
@@ -186,49 +190,45 @@
     timeline.setGroups(groups);
     timeline.setItems(items);
     timeline.on('click', function (properties) {
+      if (! propertiesContainClass(properties, 'ektos-pn') &&
+        ! propertiesContainClass(properties, 'mi-monimos-editable')) {
+        return;
+      }
       var selectedGroup = groups.get(properties.group);
-      if (isParentGroup(selectedGroup)) {
-          return;
+      var selectedCategory = groups.get(selectedGroup.nestedInGroup);
+      var btns = {
+        "Ακύρωση": function() {
+          $(this).dialog("close");
+        }
       }
-      if (properties.what === "group-label" ) {
-        //console.log(properties);
-        var btns = {
-          "Αλλαγή Ονόματος": function() {
-            groups.update({
-              id: properties.group,
-              content: prompt("Επεξεργασία") || selectedGroup.content,
-              treeLevel: 1
-            });
-            $(this).dialog( "close" );
-          },
-          "Ακύρωση": function() {
-            $(this).dialog( "close" );
-          }
-        }
-        if (properties.event.originalTarget.parentElement.classList.contains('ektos-pn') ||
-          properties.event.originalTarget.classList.contains('ektos-pn')) {
-          btns["Διαγραφή"] = function() {
-            var itemsToRemove = items.get({
-              filter: (item) => {
-                return item.group == properties.group
-              }
-            });
-            items.remove(itemsToRemove);
-            ektosCategory.nestedGroups.splice(ektosCategory.nestedGroups.indexOf(properties.group), 1);
-            groups.remove({
-              id: properties.group,
-            });
-            $(this).dialog( "close" );
-          }
-        }
-        $("#dialog-confirm").dialog({
-          resizable: false,
-          height: "auto",
-          width: 400,
-          modal: true,
-          buttons: btns
+      btns["Αλλαγή Ονόματος"] = function() {
+        groups.update({
+          id: properties.group,
+          content: prompt("Επεξεργασία") || selectedGroup.content,
+          treeLevel: 1
         });
+        $(this).dialog("close");
       }
+      btns["Διαγραφή"] = function() {
+        var itemsToRemove = items.get({
+          filter: (item) => {
+            return item.group == properties.group
+          }
+        });
+        items.remove(itemsToRemove);
+        selectedCategory.nestedGroups.splice(ektosCategory.nestedGroups.indexOf(properties.group), 1);
+        groups.remove({
+          id: properties.group,
+        });
+        $(this).dialog("close");
+      }
+      $("#dialog-confirm").dialog({
+        resizable: false,
+        height: "auto",
+        width: 400,
+        modal: true,
+        buttons: btns
+      });
     });
 
     // Data serialization utilities
@@ -269,8 +269,7 @@
         }
       })[0].nestedGroups.push(newIdAutoAssigned);
     }
-    document.getElementById('addMonimos').onclick = () => addGroup('Όνομα Μόνιμου', 'Μόνιμοι', null);
-    document.getElementById('addMiMonimos').onclick = () => addGroup('Όνομα Μη Μόνιμου', 'Μη Μόνιμοι', null);
+    document.getElementById('addMiMonimos').onclick = () => addGroup('Όνομα Μη Μόνιμου', 'Μη Μόνιμοι', 'mi-monimos-editable');
     document.getElementById('addEktosPN').onclick = () => addGroup('Όνομα Εκτός ΠΝ', 'Εκτός ΠΝ', 'ektos-pn');
 
   </script>
