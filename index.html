@@ -49,7 +49,8 @@
 
     function propertiesContainClass(properties, className) {
       var target = $(properties.event.target)
-      return target.hasClass(className) || target.parent().hasClass(className)
+      return (target.hasClass(className) && target.hasClass('vis-label')) 
+        || (target.parent().hasClass(className) && target.parent().hasClass('vis-label'))
     }
 
     // Sample Data
@@ -62,8 +63,8 @@
       {id: 5, content: 'name2', treeLevel: 1},
       {id: 6, content: 'name3-editable', treeLevel: 1, className: 'mi-monimos-editable'},
       {id: 7, content: 'name4', treeLevel: 1},
-      {id: 8, content: 'name5', treeLevel: 1},
-      {id: 9, content: 'name6', treeLevel: 1}
+      {id: 8, content: 'name5', treeLevel: 1, className: 'ektos-pn'},
+      {id: 9, content: 'name6', treeLevel: 1, className: 'ektos-pn'}
     ]
 
     var sampleItems = [
@@ -109,16 +110,6 @@
       }
     ]
 
-    // Add class to ektos-pn to be able to grab them later
-    var ektosCategory = sampleGroups.filter(obj => {
-      return obj.content == "Εκτός ΠΝ"
-    })[0];
-    var ektosPN = sampleGroups.filter(obj => {
-      return ektosCategory.nestedGroups.includes(obj.id)
-    });
-    for (var i = 0; i < ektosPN.length; i++) {
-      ektosPN[i]["className"] = "ektos-pn";
-    }
     // Create groups
     var groups = new vis.DataSet(sampleGroups);
 
