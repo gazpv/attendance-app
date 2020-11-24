@@ -145,6 +145,9 @@
     var items = new vis.DataSet(sampleItems);
 
     // specify timeline options
+    const MIN = moment("2020-10-25", "YYYY-MM-DD");  // lower limit of visible range
+    const MAX = moment("2020-12-15", "YYYY-MM-DD").add(1, 'days');  // upper limit of visible range
+
     var options = {
       locale: 'en',
       stack: false,
@@ -162,8 +165,8 @@
       orientation: 'top',
 
       timeAxis: { scale: 'day', step: 1 },
-      min: moment("2020-11-01", "YYYY-MM-DD"),  // lower limit of visible range
-      max: moment("2020-11-10", "YYYY-MM-DD").add(1, 'days'),
+      min: MIN,
+      max: MAX,
 
       zoomable: false,
       zoomMin: 1000 * 60 * 60 * 24 * 31 * 2,  // two days (in milliseconds)
@@ -185,14 +188,14 @@
         var overlapping = items.get({
           filter: function(testItem) {
             return (
-              (testItem.group == item.group) &&
-              (testItem.id != item.id) &&
-              (item.end >= testItem.start) &&
-              (item.start <= testItem.end)
+              (testItem.group == item.group)
+              && (testItem.id != item.id)
+              && (item.end >= testItem.start)
+              && (item.start <= testItem.end)
             )
           }
         });
-        if (overlapping.length == 0) {
+        if (overlapping.length == 0 && (item.start >= MIN) && (item.end <= MAX)) {
           callback(item);
         }
       }
@@ -243,6 +246,12 @@
         buttons: btns
       });
     });
+
+    // Add timeline markers for start and end
+    timeline.addCustomTime(MIN, 'minAxis');
+    timeline.setCustomTimeMarker("Έναρξη", 'minAxis', false);
+    timeline.addCustomTime(MAX, 'maxAxis');
+    timeline.setCustomTimeMarker("Λήξη", 'maxAxis', false);
 
     // Data serialization utilities
     var txtData = document.getElementById('data');
