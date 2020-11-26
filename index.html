@@ -19,6 +19,13 @@
     label, input { display:block; }
     input.text { margin-bottom:12px; width:95%; padding: .4em; }
     fieldset { padding:0; border:0; margin-top:25px; }
+    .sticky {
+      position: fixed;
+      margin-left: 9px;
+    }
+    .vis-custom-time {
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -314,6 +321,18 @@
     }
     document.getElementById('addMiMonimos').onclick = () => addGroup('mi-monimos-editable', 2);
     document.getElementById('addEktosPN').onclick = () => addGroup('ektos-pn', 3);
+
+    // make the header sticky
+    var header = document.querySelector("div.vis-panel.vis-top");
+    var sticky = header.offsetTop;
+    function onScroll() {
+      if (window.pageYOffset > sticky) {
+        header.classList.add("sticky");
+      } else {
+        header.classList.remove("sticky");
+      }
+    }
+    window.onscroll = function() { onScroll(); };
 
   </script>
 
