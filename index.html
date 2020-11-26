@@ -265,11 +265,18 @@
       items.add(data);
     };
     document.getElementById('save').onclick = function saveData() {
-      var data = JSON.parse(JSON.stringify(items.get()));  // HACK to clone the object for immutability, because the vis DataSet API does not provide a way to do so.
-      data.forEach(item => {
-        item.start = moment(item.start).format('YYYY-MM-DD');
-        item.end = moment(item.end).subtract(1, 'days').format('YYYY-MM-DD');  // HACK: we want the bar to cover the end day
-      });
+      var data = {};
+      var rawData = items.get();
+      for (const i in rawData) {
+        var item = rawData[i];
+        if (! (item.group in data)) {
+          data[item.group] = [];
+        }
+        data[item.group].push({
+          "start": moment(item.start).format('YYYY-MM-DD'),
+          "end": moment(item.end).subtract(1, 'days').format('YYYY-MM-DD')
+        })
+      }
       txtData.value = JSON.stringify(data, null, 2);
     }
 
