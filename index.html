@@ -180,6 +180,9 @@
         if (isParentGroup(groups.get(item.group))) {
           return;
         }
+        if (item.start <= MIN || item.start >= MAX) {
+          return;
+        }
         item.end = addDays(item.start, 1);
         item.content = '';
         callback(item);
